@@ -1,0 +1,46 @@
+name: CI checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  pre-commit:
+    if: github.event.pull_request.draft -- false
+    runs-on: linux1
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Cleanup work folder
+        if: always()
+        run: |
+          ls -la  ./
+          rm -fr ./* || true
+          rm -fr ./.??* || true
+          ls -la ./
+        shell: bash
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      - name: Install pre-commit
+        run: pip install pre-commit
+      - name: Run pre-commit check
+        run: |
+          changed_files=$(git diff --name-only --diff-filter=d origin/master)
+          echo "These are the change" $changed_files
+      - name: Post-job cleanup work folder
+        run: |
+          ls -la  ./
+          rm -fr ./* || true
+          rm -fr ./.??* || true
+          ls -la ./
+        shell: bash
